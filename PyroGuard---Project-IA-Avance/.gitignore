@@ -1,0 +1,23 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Artefactos generados por la IA
+ai/data/*.csv
+ai/models/*.pkl
+
+# Resultados de evaluación generados localmente
+ai/results/*.json
+ai/results/*.txt
+
+# IDE / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

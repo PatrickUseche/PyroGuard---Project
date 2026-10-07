@@ -1,0 +1,4 @@
+Los resultados de evaluacion se muestran directamente en consola al ejecutar:
+python ai/3_evaluar_modelo.py
+
+Los archivos de resultados pueden generarse en futuras iteraciones sin modificar el modelo.
