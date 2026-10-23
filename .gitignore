@@ -1,23 +1,11 @@
-# Entorno virtual
 .venv/
 venv/
-env/
-
-# Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Artefactos generados por la IA
-ai/data/*.csv
-ai/models/*.pkl
-
-# Resultados de evaluación generados localmente
-ai/results/*.json
-ai/results/*.txt
-
-# IDE / sistema
-.vscode/
-.idea/
+.pytest_cache/
+.env
 .DS_Store
-Thumbs.db
+# El dataset y el modelo se incluyen en este avance para reproducibilidad/despliegue.
+# Los reportes de evaluación pueden regenerarse.
+reports/*.json
+reports/*.csv

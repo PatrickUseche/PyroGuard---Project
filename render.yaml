@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: pyroguard-ia
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      # Configura AI_API_KEY desde el panel de Render para restringir /predict.
