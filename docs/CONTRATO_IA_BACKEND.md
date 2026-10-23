@@ -4,6 +4,8 @@ Este documento define el contrato HTTP entre el servicio de inferencia (`PyroGua
 backend (`PyroGuard-Backend`, Django REST Framework). Es la referencia única para ambos repositorios:
 cualquier cambio de campos, rangos o códigos de error debe reflejarse aquí y subir `contract_version`.
 
+Los ejemplos ejecutables de `docs/contract/examples/` se verifican en las pruebas de ambos repositorios.
+
 ## 1. Flujo
 
 ```
