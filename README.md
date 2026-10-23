@@ -12,11 +12,11 @@ Servicio de inferencia de IA para **PyroGuard / Forest Guardian**. Implementa un
 - API REST con `GET /health`, `GET /` y `POST /predict`; documentación Swagger automática en `/docs`.
 - Reglas de seguridad RF08 que combinan la salida del modelo con señales de sensores y no convierten una lectura aislada de llama en `FIRE`.
 - Pruebas automatizadas, Dockerfile y configuración base para Render.
-- Guía/archivos de referencia de integración con Django en `backend_integration/`.
+- Contrato de integración con PyroGuard-Backend en `docs/CONTRATO_IA_BACKEND.md`.
 
 ## Requisitos
 
-Python 3.11 o 3.12 recomendado. No requiere una API externa de OpenAI, Gemini u otro proveedor; Random Forest se ejecuta en el propio servicio.
+Python 3.12 (versión de despliegue en Render) hasta 3.14. No requiere una API externa de OpenAI, Gemini u otro proveedor; Random Forest se ejecuta en el propio servicio.
 
 ## Inicio rápido en Windows
 
@@ -54,7 +54,7 @@ Ejemplo de entrada compatible con el contrato del documento:
 }
 ```
 
-`gas` es opcional. Si el hardware no separa un sensor de gas, el servicio utiliza `0.0`; eso debe quedar documentado por el equipo. `node_id`, temperatura, humedad, humo y llama son obligatorios.
+`gas` es opcional: si falta o llega como `null`, el servicio utiliza `0.0`. `node_id`, temperatura, humedad, humo y llama son obligatorios. Los rangos aceptados coinciden con la validación del backend (temperatura de −50 a 150 °C, humedad de 0 a 100 %, humo y gas ≥ 0, `flame` booleano o 0/1); el detalle está en el contrato.
 
 La respuesta incluye:
 
@@ -65,12 +65,14 @@ La respuesta incluye:
 - `risk_level`: clasificación final tras las reglas de corroboración.
 - `safety_rules`: regla usada y señales que motivaron la salida.
 - `model_version`, `timestamp` y advertencia del alcance sintético.
+- `contract_version`: versión del contrato IA-Backend que cumple la respuesta.
 
 Ejemplo de respuesta abreviada:
 
 ```json
 {
   "status": "ok",
+  "contract_version": "1.0",
   "node_id": "NODE-001",
   "model_version": "pyroguard-rf-1.0.0",
   "model_prediction": "FIRE",
@@ -90,6 +92,12 @@ Ejemplo de respuesta abreviada:
 ```
 
 Las probabilidades son ilustrativas; la respuesta concreta se calcula con el modelo incluido.
+
+Los errores usan un formato uniforme con un `code` estable (`VALIDATION_ERROR`, `UNAUTHORIZED`, `MODEL_UNAVAILABLE`, `PREDICTION_FAILED`, `INTERNAL_ERROR`, entre otros):
+
+```json
+{"status": "error", "code": "VALIDATION_ERROR", "errors": {"temperature": ["Input should be less than or equal to 150"]}}
+```
 
 ## Reentrenar
 
@@ -119,7 +127,7 @@ En producción, define `AI_API_KEY` en la configuración de secretos del host; n
 
 ## Integración con Django
 
-Consulta `backend_integration/INTEGRACION_BACKEND.md`. La integración propuesta hace que Django guarde la medición, solicite la predicción a esta API, persista el resultado en la misma medición y lo entregue por `GET /api/readings/`. Si la IA no responde, la medición se conserva y queda marcada sin predicción disponible.
+Consulta `docs/CONTRATO_IA_BACKEND.md`. Django guarda la lectura, solicita la predicción a esta API y combina el resultado con sus propias reglas en `RiskAssessment`. El backend conserva la decisión final: la IA puede elevar el nivel de riesgo, pero nunca reducirlo. Si la IA no responde, la lectura se conserva y se evalúa solo con las reglas del backend.
 
 Arquitectura:
 
@@ -129,8 +137,8 @@ ESP32 / simulador
 PyroGuard-Backend (Django)
       ↓ POST /predict
 PyroGuard-IA (FastAPI + Random Forest + reglas RF08)
-      ↓ risk_level / probabilities / model_version
-Django guarda la predicción
+      ↓ risk_level / risk_probability / model_version
+Django combina IA + reglas y guarda RiskAssessment / Alert
       ↓ GET /api/readings/
 Angular Dashboard
 ```
@@ -160,5 +168,4 @@ No escribas el dominio de ejemplo como si fuera real: usa la URL que la platafor
 - Sustituir progresivamente el dataset sintético por datos reales, etiquetados y recogidos bajo supervisión segura.
 - Revisar umbrales de RF08 con el docente y el equipo de hardware.
 - Medir recall de FIRE, falsos negativos y falsos positivos en un conjunto separado que represente el entorno objetivo.
-- Integrar persistencia/historial de predicciones y alertas en backend.
 - Verificar contrato exacto del ESP32: escala real del sensor de humo/gas y codificación de `flame`.

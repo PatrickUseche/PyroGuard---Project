@@ -154,5 +154,5 @@ Notas adicionales:
   Random Forest no extrapola, por lo que las reglas del backend siguen siendo la salvaguarda principal.
 - La llamada HTTP a la IA debe hacerse **fuera** de la transacción de base de datos que guarda la lectura,
   para no mantener bloqueos abiertos durante el timeout.
-- `pandas==2.2.3` no tiene wheel para Python 3.14; producción (Render, Python 3.12.8) no se ve afectada,
-  pero el desarrollo local con 3.14 requiere actualizar el pin.
+- `pandas==2.2.3` no tenía wheel para Python 3.14; se actualizó a `pandas==2.3.3`, compatible con
+  Python 3.12 (Render) y 3.14.

@@ -1,2 +1,0 @@
-# Añadir esta dependencia al requirements.txt actual del backend
-requests==2.32.5

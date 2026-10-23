@@ -10,7 +10,8 @@
 - [x] Validación de rangos de entrada y contrato compatible con el documento de requisitos.
 - [x] Capa inicial de reglas de seguridad para RF08.
 - [x] Pruebas automatizadas para API y reglas.
-- [x] Guía de integración con el backend Django existente.
+- [x] Contrato de integración v1.0 con el backend Django (`docs/CONTRATO_IA_BACKEND.md`).
+- [x] Errores con formato uniforme y códigos estables para el backend.
 
 ## Requisitos cubiertos en este avance
 
@@ -27,7 +28,7 @@
 1. Ejecutar `python scripts/3_probar_predicciones.py` para visualizar escenarios de prueba.
 2. Ejecutar `python -m pytest -q` para mostrar el resultado de las pruebas.
 3. Iniciar `start_windows.cmd`, abrir `/docs` y probar `POST /predict` con el JSON de README.
-4. Abrir el backend después de aplicar los cambios descritos en `backend_integration/INTEGRACION_BACKEND.md`.
+4. Revisar `docs/CONTRATO_IA_BACKEND.md` para el flujo de integración con el backend.
 
 ## Limitación declarada
 

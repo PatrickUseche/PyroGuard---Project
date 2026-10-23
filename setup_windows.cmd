@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 where python >nul 2>nul
 if errorlevel 1 (
-  echo ERROR: Python no aparece en PATH. Instala Python 3.11 o 3.12 y marca Add Python to PATH.
+  echo ERROR: Python no aparece en PATH. Instala Python 3.12 o superior y marca Add Python to PATH.
   pause
   exit /b 1
 )
