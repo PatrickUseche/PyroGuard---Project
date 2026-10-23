@@ -109,8 +109,13 @@ Formato uniforme (alineado con `api/exceptions.py` del backend):
 | 422 | `VALIDATION_ERROR` | Payload fuera de contrato | Registrar `WARNING`; fallback a reglas; **sin reintento** |
 | 503 | `MODEL_UNAVAILABLE` | Modelo no cargado | Fallback a reglas |
 | 500 | `PREDICTION_FAILED` | Error interno de inferencia | Fallback a reglas |
+| 500 | `INTERNAL_ERROR` | Excepción no prevista | Fallback a reglas |
 | — | — | Timeout / conexión rechazada | Fallback a reglas |
 | 200 con cuerpo inválido | — | Respuesta no cumple este contrato | Tratar como error de contrato; fallback a reglas |
+
+En `VALIDATION_ERROR`, `errors` agrupa mensajes por campo (`{"campo": ["mensaje", ...]}`); el JSON mal
+formado se reporta en `non_field_errors`. El resto de errores usa `{"detail": "mensaje"}`. Las respuestas
+de error nunca incluyen el valor recibido ni detalles internos de la excepción.
 
 `ai_status` registrado en `RiskAssessment`: `OK`, `DISABLED` (sin `AI_SERVICE_URL`), `UNAVAILABLE`
 (timeout, conexión, 5xx), `REJECTED` (401/422) o `INVALID_RESPONSE`.

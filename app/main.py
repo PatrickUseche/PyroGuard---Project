@@ -2,6 +2,7 @@ import hmac
 import os
 from functools import lru_cache
 from fastapi import Depends, FastAPI, Header, HTTPException, status
+from app.errors import logger, register_error_handlers
 from app.predictor import RiskPredictor
 from app.schemas import HealthResponse, PredictionResponse, SensorReadingInput
 
@@ -13,6 +14,7 @@ app = FastAPI(
     ),
     version="1.0.0",
 )
+register_error_handlers(app)
 
 
 @lru_cache(maxsize=1)
@@ -46,8 +48,12 @@ def health() -> HealthResponse:
 @app.post("/predict", response_model=PredictionResponse, tags=["prediction"], dependencies=[Depends(verify_api_key)])
 def predict(reading: SensorReadingInput) -> dict:
     try:
-        return get_predictor().predict(reading.model_dump())
-    except FileNotFoundError as exc:
+        predictor = get_predictor()
+    except (FileNotFoundError, ValueError) as exc:
+        logger.error("No se pudo cargar el modelo: %s", exc)
         raise HTTPException(status_code=503, detail="Modelo no disponible. Ejecuta scripts/2_entrenar_modelo.py.") from exc
+    try:
+        return predictor.predict(reading.model_dump())
     except (ValueError, KeyError) as exc:
-        raise HTTPException(status_code=500, detail=f"No se pudo calcular la predicción: {exc}") from exc
+        logger.exception("Falló la predicción para el nodo %s", reading.node_id)
+        raise HTTPException(status_code=500, detail="No se pudo calcular la predicción.") from exc
