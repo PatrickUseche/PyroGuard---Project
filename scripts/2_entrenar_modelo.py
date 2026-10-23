@@ -1,0 +1,92 @@
+"""Entrena y evalúa el Random Forest. Genera el artefacto utilizado por la API."""
+from datetime import datetime, timezone
+from pathlib import Path
+import json
+import joblib
+import pandas as pd
+import sklearn
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+
+ROOT = Path(__file__).resolve().parents[1]
+DATA_PATH = ROOT / "data" / "dataset_sintetico.csv"
+MODEL_PATH = ROOT / "models" / "modelo_riesgo.joblib"
+REPORT_PATH = ROOT / "reports" / "evaluation.json"
+CONFUSION_PATH = ROOT / "reports" / "confusion_matrix.csv"
+FEATURES = ["temperature", "humidity", "smoke", "gas", "flame"]
+LABELS = ["NORMAL", "WARNING", "FIRE"]
+MODEL_VERSION = "pyroguard-rf-1.0.0"
+
+
+def main() -> None:
+    if not DATA_PATH.exists():
+        raise SystemExit(f"No se encontró {DATA_PATH}. Ejecuta primero scripts/1_generar_dataset.py")
+    data = pd.read_csv(DATA_PATH)
+    missing = set(FEATURES + ["label"]) - set(data.columns)
+    if missing:
+        raise SystemExit(f"Faltan columnas necesarias: {sorted(missing)}")
+    if data[FEATURES + ["label"]].isna().any().any():
+        raise SystemExit("El dataset contiene valores vacíos en variables de entrenamiento.")
+    X = data[FEATURES].copy()
+    X["flame"] = X["flame"].astype(int)
+    y = data["label"].astype(str)
+    if set(y.unique()) != set(LABELS):
+        raise SystemExit(f"Se esperaban las tres clases {LABELS}, pero se encontraron {sorted(y.unique())}")
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y
+    )
+    model = RandomForestClassifier(
+        n_estimators=300,
+        max_features="sqrt",
+        min_samples_leaf=2,
+        class_weight="balanced",
+        random_state=42,
+        n_jobs=-1,
+    )
+    model.fit(X_train, y_train)
+    predictions = model.predict(X_test)
+    metrics = {
+        "model_version": MODEL_VERSION,
+        "trained_at_utc": datetime.now(timezone.utc).isoformat(),
+        "dataset_type": "synthetic",
+        "dataset_rows": int(len(data)),
+        "train_rows": int(len(X_train)),
+        "test_rows": int(len(X_test)),
+        "features": FEATURES,
+        "labels": LABELS,
+        "accuracy": round(float(accuracy_score(y_test, predictions)), 6),
+        "classification_report": classification_report(y_test, predictions, labels=LABELS, output_dict=True, zero_division=0),
+        "confusion_matrix_labels_order": LABELS,
+        "scikit_learn_version": sklearn.__version__,
+        "limitations": "Métricas sobre datos sintéticos; no estiman desempeño en incendios reales.",
+    }
+    MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
+    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump({
+        "model": model,
+        "model_version": MODEL_VERSION,
+        "feature_columns": FEATURES,
+        "training_data_type": "synthetic",
+        "trained_at_utc": metrics["trained_at_utc"],
+        "scikit_learn_version": sklearn.__version__,
+    }, MODEL_PATH)
+    REPORT_PATH.write_text(json.dumps(metrics, indent=2, ensure_ascii=False), encoding="utf-8")
+    cm = confusion_matrix(y_test, predictions, labels=LABELS)
+    pd.DataFrame(cm, index=LABELS, columns=LABELS).to_csv(CONFUSION_PATH, index_label="real\\predicho")
+
+    print("\n=== ENTRENAMIENTO PYROGUARD IA ===")
+    print(f"Versión: {MODEL_VERSION}")
+    print(f"Filas de entrenamiento: {len(X_train)} | Filas de prueba: {len(X_test)}")
+    print(f"Accuracy sintético: {metrics['accuracy']:.4f}")
+    report = classification_report(y_test, predictions, labels=LABELS, zero_division=0)
+    print(report)
+    print(f"Modelo guardado: {MODEL_PATH}")
+    print(f"Métricas guardadas: {REPORT_PATH}")
+    print(f"Matriz de confusión: {CONFUSION_PATH}")
+    print("ADVERTENCIA: el dataset es sintético y no valida el funcionamiento ante incendios reales.")
+
+
+if __name__ == "__main__":
+    main()
